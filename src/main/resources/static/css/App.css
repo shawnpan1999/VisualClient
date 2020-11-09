@@ -1,0 +1,7 @@
+.longContent {
+    max-height: 75px;
+    overflow: auto;
+    word-break: break-word;
+    /* max-width: 300px; */
+    min-width: 120px;
+}

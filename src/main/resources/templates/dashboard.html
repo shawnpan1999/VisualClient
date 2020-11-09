@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>dashboard</title>
+    <link rel="stylesheet" href="/css/bootstrap.css">
+    <link rel="stylesheet" href="/css/bs4.pop.css">
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/popper.js"></script>
+    <script src="/js/bootstrap.js"></script>
+    <script src="/js/bs4.pop.js"></script>
+</head>
+<body>
+<div class="container">
+    <h3>CPU</h3>
+    <p>CPU使用率:</p>
+    <div class="progress">
+        <div class="progress-bar" style="width:0%" id="CPU_utilization"></div>
+    </div>
+
+    <h3>内存</h3>
+    <p id="memory_available">可用内存: M</p>
+    <p>内存使用率:</p>
+    <div class="progress">
+        <div class="progress-bar bg-success" style="width:0%" id="memory_utilization"></div>
+    </div>
+
+    <h3>磁盘</h3>
+    <p id="filesystem_size">磁盘空间: / G</p>
+    <p>磁盘使用率:</p>
+    <div class="progress">
+        <div class="progress-bar bg-info" style="width:0%" id="filesystem_utilization"></div>
+    </div>
+
+</div>
+
+<script>
+    var time = window.setInterval("refreshInfo()",1500);
+
+    function refreshInfo() {
+        $.ajax({type : "post", url : "/dashboard/getInfoList", dataType: "json",
+            data : {targetUrl: "http://118.178.95.33:9100/metrics"},
+            success : function(result){
+                if (result.code == 0) {
+                    var CPU_utilization = result.data.CPU_utilization;
+                    var memory_utilization = result.data.memory_utilization;
+                    var memory_available = result.data.memory_available;
+                    var filesystem_total_size = result.data.filesystem_total_size;
+                    var filesystem_avail_size = result.data.filesystem_avail_size;
+                    var filesystem_utilization = result.data.filesystem_utilization;
+
+                    document.getElementById("CPU_utilization").style.width = CPU_utilization + "%";
+                    document.getElementById("memory_utilization").style.width = memory_utilization + "%";
+                    document.getElementById("memory_available").innerText = "可用内存: " + memory_available + "M";
+                    document.getElementById("filesystem_size").innerText = "磁盘空间: " + filesystem_avail_size + "/" + filesystem_total_size + " G";
+                    document.getElementById("filesystem_utilization").style.width = filesystem_utilization + "%";
+                } else {
+                    bs4pop.notice("获取信息失败", {type: "danger"});
+                }
+            },
+            error : function(result){
+                bs4pop.notice("获取信息失败", {type: "danger"});
+            }
+        });
+    }
+</script>
+</body>
+</html>

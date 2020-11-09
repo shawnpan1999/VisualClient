@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="zh" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>index</title>
+    <link rel="stylesheet" href="/css/bootstrap.css">
+    <link rel="stylesheet" href="/css/bs4.pop.css">
+    <link rel="stylesheet" href="/css/App.css">
+    <script src="/js/jquery.min.js"></script>
+    <script src="/js/popper.js"></script>
+    <script src="/js/bootstrap.js"></script>
+    <script src="/js/bs4.pop.js"></script>
+    <script src="/js/App.js"></script>
+</head>
+<body>
+<div class="container">
+<ul id="homeTab" class="nav nav-pills" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link active" data-toggle="pill" href="#images">镜像</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link" data-toggle="pill" href="#containers">容器</a>
+    </li>
+</ul>
+<div id="homeTabContent" class="tab-content">
+    <div class="container tab-pane active" id="images">
+        <table class="table table-hover table-responsive">
+            <thead>
+            <tr>
+                <th>repository</th>
+                <th>tag</th>
+                <th>imageId</th>
+                <th>created</th>
+                <th>size</th>
+                <th>options</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="image,indexInc:${images}" th:id="imageLine+(${indexInc.index})">
+                <td th:text="${image.repository}"></td>
+                <td th:text="${image.tag}"></td>
+                <td th:text="${image.imageId}"></td>
+                <td th:text="${image.created}"></td>
+                <td th:text="${image.size}"></td>
+                <td>
+                    <button type="button" class="btn btn-outline-success btn-sm" data-toggle="modal" data-target="#containerCreateModal"
+                            th:id="create+(${indexInc.index})" th:data-repo="${image.repository}" th:data-tag="${image.tag}"
+                            onclick="modelFill(this.getAttribute('data-repo'), this.getAttribute('data-tag'))">创建容器</button>
+                    <button type="button" class="btn btn-outline-danger btn-sm"
+                            th:id="deleteImage+(${indexInc.index})" th:data-iid="${image.imageId}" th:data-bid="${indexInc.index}"
+                            onclick="imageDelete(this.getAttribute('data-iid'), this.getAttribute('data-bid'))">删除</button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+        <h3>镜像加载</h3>
+        <div class="custom-file">
+            <input type="file" class="custom-file-input" id="fileInput" name="file">
+            <label class="custom-file-label" for="fileInput">...</label>
+        </div>
+        <div class="mt-3">
+            <button type="button" class="btn btn-primary" onclick="loadImage()" id="loadImage">Load</button>
+        </div>
+    </div>
+    <div class="container tab-pane fade" id="containers">
+        <button type="button" class="btn btn-primary" onclick="refreshContainers(Boolean(true))">刷新</button>
+        <table class="table table-hover" id="containerTable">
+            <thead>
+            <tr>
+                <th>id</th>
+                <th>image</th>
+                <th>command</th>
+                <th>created</th>
+                <th>state</th>
+                <th>status</th>
+                <th>ports</th>
+                <th>names</th>
+                <th>options</th>
+            </tr>
+            </thead>
+            <tbody id="containerTableBody">
+            <tr th:each="container,indexInc:${containers}" th:id="containerLine+(${indexInc.index})">
+                <td><div th:text="${container.id}"></div></td>
+                <td><div class="longContent" th:text="${container.image}"></div></td>
+                <td><div class="longContent" th:text="${container.command}"></div></td>
+                <td><div class="longContent" th:text="${container.created}"></div></td>
+                <td><div th:text="${container.state}"></div></td>
+                <td><div class="longContent" th:text="${container.status}"></div></td>
+                <td><div th:text="${container.ports}"></div></td>
+                <td><div class="longContent" th:text="${container.names}"></div></td>
+                <td th:id="buttonset+(${indexInc.index})" th:switch="${container.state}">
+                    <div th:case="created">
+                        <button type="button" class="btn btn-outline-success btn-sm" th:id="start+(${indexInc.index})" th:data-cid="${container.realId}" th:data-bid="${indexInc.index}"
+                                onclick="containerStart(this.getAttribute('data-cid'),this.getAttribute('data-bid'))">启动</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" th:id="delete+(${indexInc.index})" th:data-cid="${container.realId}" th:data-bid="${indexInc.index}"
+                                onclick="containerDelete(this.getAttribute('data-cid'),this.getAttribute('data-bid'))">删除</button>
+                    </div>
+                    <div th:case="running">
+                        <button type="button" class="btn btn-outline-info btn-sm" th:id="restart+(${indexInc.index})" th:data-cid="${container.realId}" th:data-bid="${indexInc.index}"
+                                onclick="containerRestart(this.getAttribute('data-cid'),this.getAttribute('data-bid'))">重启</button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" th:id="stop+(${indexInc.index})" th:data-cid="${container.realId}" th:data-bid="${indexInc.index}"
+                                onclick="containerStop(this.getAttribute('data-cid'),this.getAttribute('data-bid'))">停止</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" th:id="delete+(${indexInc.index})" th:data-cid="${container.realId}" th:data-bid="${indexInc.index}"
+                                onclick="containerDelete(this.getAttribute('data-cid'),this.getAttribute('data-bid'))">删除</button>
+                    </div>
+                    <div th:case="exited">
+                        <button type="button" class="btn btn-outline-info btn-sm" th:id="restart+(${indexInc.index})" th:data-cid="${container.realId}" th:data-bid="${indexInc.index}"
+                                onclick="containerRestart(this.getAttribute('data-cid'),this.getAttribute('data-bid'))">重启</button>
+                        <button type="button" class="btn btn-outline-warning btn-sm" th:id="stop+(${indexInc.index})" th:data-cid="${container.realId}" th:data-bid="${indexInc.index}" disabled="disabled"
+                                onclick="containerStop(this.getAttribute('data-cid'),this.getAttribute('data-bid'))">停止</button>
+                        <button type="button" class="btn btn-outline-danger btn-sm" th:id="delete+(${indexInc.index})" th:data-cid="${container.realId}" th:data-bid="${indexInc.index}"
+                                onclick="containerDelete(this.getAttribute('data-cid'),this.getAttribute('data-bid'))">删除</button>
+                    </div>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- 创建容器模态框（Modal） -->
+<div class="modal fade" id="containerCreateModal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h4 class="modal-title">创建容器</h4>
+                <button type="button" class="close" data-dismiss="modal">
+                    &times;
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <label for="containerCreateRepoTag" class="col-sm-3 control-label">repoTag</label>
+                    <div class="col-sm-9">
+                        <input readonly="readonly" type="text" class="form-control" id="containerCreateRepoTag" name="repoTag" required/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="containerCreateName" class="col-sm-3 control-label">name</label>
+                    <div class="col-sm-9">
+                        <input type="text" class="form-control" id="containerCreateName" name="name"/>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-default" data-dismiss="modal">关闭</button>
+                <button type="button" class="btn btn-primary" data-dismiss="modal"
+                        onclick="containerCreate()">提交</button>
+            </div>
+        </div>
+    </div><!-- /.modal -->
+</div>
+
+<script>
+    $('#fileInput').on('change',function(){
+        var fileName = $(this).val();
+        //更换上面的字
+        $(this).next('.custom-file-label').html(fileName);
+    })
+</script>
+</body>
+
+</html>
